@@ -2,22 +2,248 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>マイホームページ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>白馬キャンプ賛美選曲（コーラス）連絡フォーム</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1;
+            margin: 0;
+            padding: 20px;
+            color: #323130;
+        }
+        .form-container {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-top: 8px solid #0078d4;
+        }
+        .form-header {
+            padding: 30px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #edebe9;
+        }
+        .form-header h1 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            color: #323130;
+        }
+        .form-header p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #605e5c;
+            line-height: 1.5;
+        }
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #edebe9;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #0078d4;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .required::after {
+            content: " *";
+            color: #a4262c;
+        }
+        .form-control, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #a19f9d;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .form-control:focus, select:focus, textarea:focus {
+            border-color: #0078d4;
+            outline: none;
+        }
+        .radio-group, .checkbox-group {
+            margin-top: 8px;
+        }
+        .radio-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .radio-item input {
+            margin-right: 10px;
+        }
+        .footnote {
+            font-size: 12px;
+            color: #a4262c;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .btn-submit {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-submit:hover {
+            background-color: #106ebe;
+        }
+        .dynamic-section {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- 用途①：フォームの設置 -->
-    <h2>お問い合わせフォーム</h2>
-    <!-- 
-      ※GitHub Pagesは静的サイト専用のため、HTMLだけでは送信機能が動きません。
-      formrun、SSForm、Googleフォーム、Formspreeなどの外部サービスを利用し、
-      指定されたaction属性のURLを以下に設定してください。
-    -->
-    <form action="ここに外部フォームサービスのURL" method="POST">
-        <label>お名前: <input type="text" name="name" required></label><br><br>
-        <label>メール: <input type="email" name="email" required></label><br><br>
-        <label>内容: <textarea name="message" required></textarea></label><br><br>
-        <button type="submit">送信</button>
+<div class="form-container">
+    <div class="form-header">
+        <h1>白馬キャンプ賛美選曲（コーラス）連絡フォーム</h1>
+        <p>選曲と同時にまとめて連絡する場合は、こちらのフォームでまとめて送ることができます。</p>
+        <p>※今回から前半預言の後の曲は「短い曲一覧表」から選曲していただくことになりました。</p>
+        <p>※後半預言の後の曲は「God is working for my good(マーリンさん)」になります。</p>
+    </div>
+
+    <form id="worshipForm">
+        <div class="section">
+            <div class="section-title">セクション 1: 奉仕内容</div>
+            
+            <div class="form-group">
+                <label class="required">1. 奉仕者名</label>
+                <select id="singerName" name="singerName" required>
+                    <option value="">選択してください</option>
+                    <option value="placeholder1">奉仕者A（後ほど一覧に差し替え）</option>
+                    <option value="placeholder2">奉仕者B（後ほど一覧に差し替え）</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="required">2. 連絡内容</label>
+                <div class="radio-group">
+                    <div class="radio-item"><input type="radio" name="contactType" value="新規" required> 新規</div>
+                    <div class="radio-item"><input type="radio" name="contactType" value="変更"> 変更（変更の場合は、全曲選択しなおしてください）</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="required">3. 奉仕する聖会・集会</label>
+                <select id="meetingEvent" name="meetingEvent" required>
+                    <option value="">選択してください</option>
+                    <option value="14火・夜の聖会">14火・夜の聖会</option>
+                    <option value="15火・早天聖会">15火・早天聖会</option>
+                    <option value="15水・開会聖会">15水・開会聖会</option>
+                    <option value="15水・夜の聖会">15水・夜の聖会</option>
+                    <option value="16木・早天聖会">16木・早天聖会</option>
+                    <option value="16木・夜の聖会">16木・夜の聖会</option>
+                    <option value="17金・早天聖会">17金・早天聖会</option>
+                    <option value="17金・閉会聖会">17金・閉会聖会</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="required">4. 担当の賛美</label>
+                <div class="radio-group">
+                    <div class="radio-item"><input type="radio" name="worshipType" value="前半賛美" required> 前半賛美</div>
+                    <div class="radio-item"><input type="radio" name="worshipType" value="後半賛美"> 後半賛美</div>
+                    <div class="radio-item"><input type="radio" name="worshipType" value="特別賛美"> 特別賛美</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="required">5. グループ名</label>
+                <input type="text" class="form-control" name="groupName" required placeholder="回答を入力してください">
+            </div>
+
+            <div class="form-group">
+                <label class="required">6. 選曲（オケ有無）</label>
+                <textarea name="orchestraDetails" rows="3" required placeholder="特別賛美は5分程度でお願いいたします。"></textarea>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">セクション 2: 選曲</div>
+
+            <div class="form-group">
+                <label class="required">7. 選曲(1曲目)</label>
+                <select class="song-select" name="song1" required>
+                    <option value="">曲を選択してください（全曲データベースより取得）</option>
+                </select>
+            </div>
+
+            <div id="additionalSongs">
+                </div>
+
+            <div id="prophecySongSection" class="form-group" style="display:none;">
+                <label class="required">預言後の曲</label>
+                <select id="prophecySong" name="prophecySong">
+                    </select>
+                <div id="prophecyFootnote" class="footnote" style="display:none;">※後半賛美の預言後は「God is working for my good」に固定されています。</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="form-group">
+                <label>コーラス・備考欄</label>
+                <textarea name="remarks" rows="3" placeholder="回答を入力してください"></textarea>
+            </div>
+            <button type="submit" class="btn-submit">送信</button>
+        </div>
     </form>
+</div>
+
+<script>
+    // 担当の賛美切り替えイベントの監視
+    document.querySelectorAll('input[name="worshipType"]').forEach(elem => {
+        elem.addEventListener('change', function(e) {
+            const type = e.target.value;
+            handleWorshipTypeChange(type);
+        });
+    });
+
+    function handleWorshipTypeChange(type) {
+        const prophecySection = document.getElementById('prophecySongSection');
+        const prophecySelect = document.getElementById('prophecySong');
+        const footnote = document.getElementById('prophecyFootnote');
+
+        if (type === '前半賛美') {
+            prophecySection.style.display = 'block';
+            footnote.style.display = 'none';
+            // ④ 前半用の選択肢をセットするロジック（後ほどスプレッドシートと連動）
+            prophecySelect.innerHTML = '<option value="">選択してください（前半賛美預言後タブより）</option><option value="other">その他（全曲から参照）</option>';
+            prophecySelect.disabled = false;
+
+        } else if (type === '後半賛美') {
+            prophecySection.style.display = 'block';
+            footnote.style.display = 'block'; // ⑤ 脚注を表示
+            // ⑤ 後半は固定
+            prophecySelect.innerHTML = '<option value="God is working for my good">God is working for my good(マーリンさん)</option>';
+            prophecySelect.disabled = true; // 固定のため選択不可に
+
+        } else {
+            // 特別賛美などの場合は非表示
+            prophecySection.style.display = 'none';
+        }
+    }
+
+    // フォーム送信時の処理（モック）
+    document.getElementById('worshipForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('送信処理（今後Googleスプレッドシートへの書き込み処理などを実装します）');
+    });
+</script>
 </body>
 </html>
