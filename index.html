@@ -108,7 +108,7 @@
 
             <div id="manualSelectGroup" class="hidden">
                 <div class="form-group">
-                    <label class="required">変更後：奉仕する聖会・集会</label>
+                    <label class="required">奉仕する聖会・集会</label>
                     <select id="meetingEventManual">
                         <option value="">選択してください</option>
                         <option value="14(火)夜の聖会">14(火)夜の聖会</option>
@@ -122,7 +122,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="required">変更後：賛美区分</label>
+                    <label class="required">賛美区分</label>
                     <div class="radio-group">
                         <div class="radio-item"><input type="radio" name="worshipTypeManual" value="前半賛美"> 前半賛美</div>
                         <div class="radio-item"><input type="radio" name="worshipTypeManual" value="後半賛美"> 後半賛美</div>
@@ -238,18 +238,21 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
         try {
-            const cachedSongs = localStorage.getItem('hakuba_cached_songs');
-            const cachedCats = localStorage.getItem('hakuba_cached_cats');
+            // キャッシュ仕様: バージョン付きキー+24時間で失効。
+            // (旧実装は無期限のため、全曲タブ更新が一度キャッシュした端末に永久反映されなかった)
+            const CACHE_VER = 'v2';
+            const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+            const cachedSongs = localStorage.getItem('hakuba_cached_songs_' + CACHE_VER);
+            const cachedCats = localStorage.getItem('hakuba_cached_cats_' + CACHE_VER);
+            const cachedAt = Number(localStorage.getItem('hakuba_cached_at_' + CACHE_VER) || 0);
             let skipSongsParam = "false";
 
-            if (cachedSongs && cachedCats) {
+            if (cachedSongs && cachedCats && cachedAt && (Date.now() - cachedAt < CACHE_TTL_MS)) {
                 try {
                     masterData.allSongs = JSON.parse(cachedSongs);
                     masterData.bookCategories = JSON.parse(cachedCats);
                     skipSongsParam = "true"; 
                 } catch(cacheErr) {
-                    localStorage.removeItem('hakuba_cached_songs');
-                    localStorage.removeItem('hakuba_cached_cats');
                     skipSongsParam = "false";
                 }
             }
@@ -263,7 +266,8 @@
             const rawProphecy = result.earlyProphecySongs || [];
             masterData.earlyProphecySongs = rawProphecy.map(song => {
                 let prefix = (song.code && song.code.startsWith('K')) ? '風のひびき' : 'やすらぎの歌';
-                let volume = song.code ? song.code.replace(/^[KY]/, '') : '';
+                // 歌集コードのゼロ埋め(K01/Y01)は先頭ゼロを除去し、シート既存記載「9集」等と表記を一致させる
+                let volume = song.code ? song.code.replace(/^[KY]/, '').replace(/^0+/, '') : '';
                 return `${prefix} ${volume}集 ${song.num || ''} ${song.title || ''}`;
             });
 
@@ -272,15 +276,18 @@
                 let categories = new Set();
                 masterData.allSongs = rawAllSongs.map(song => {
                     let prefix = (song.code && song.code.startsWith('K')) ? '風のひびき' : 'やすらぎの歌';
-                    let volume = song.code ? song.code.replace(/^[KY]/, '') : '';
+                    let volume = song.code ? song.code.replace(/^[KY]/, '').replace(/^0+/, '') : '';
                     let textCategory = `${prefix} ${volume}集`;
                     categories.add(textCategory);
                     return { category: textCategory, num: song.num || '', title: song.title || '', fullName: `${prefix} ${volume}集 ${song.num || ''} ${song.title || ''}` };
                 });
                 masterData.bookCategories = Array.from(categories).sort((a,b) => b.localeCompare(a, 'ja', {numeric: true}));
                 
-                localStorage.setItem('hakuba_cached_songs', JSON.stringify(masterData.allSongs));
-                localStorage.setItem('hakuba_cached_cats', JSON.stringify(masterData.bookCategories));
+                try {
+                    localStorage.setItem('hakuba_cached_songs_' + CACHE_VER, JSON.stringify(masterData.allSongs));
+                    localStorage.setItem('hakuba_cached_cats_' + CACHE_VER, JSON.stringify(masterData.bookCategories));
+                    localStorage.setItem('hakuba_cached_at_' + CACHE_VER, String(Date.now()));
+                } catch(storageErr) { /* ストレージ不可環境でも動作継続 */ }
             }
 
             renderSingerDropdown(); renderSpecialTeamDropdown(); buildSpecialFilterDropdown(); initEventListeners();
@@ -351,6 +358,10 @@
         const singerName = document.getElementById('singerName').value;
         if (!singerName) { resetSelectionSection(); return; }
 
+        // 【③新規ガード】新規連絡では、シートに同名の担当があっても自動判定モーダルを出さず、
+        // 過去データの復元(プレフィル)も行わない。聖会・区分は手動選択に進む。
+        if (document.getElementById('finalContactType').value === '新規') { applyManualSelect(); return; }
+
         const matches = [];
         masterData.dynamicDuties.forEach((d, i) => { if (d.team === singerName) matches.push({ duty: d, index: i }); });
         const modal = document.getElementById('smartModal');
@@ -387,7 +398,8 @@
         document.getElementById('manualSelectGroup').classList.add('hidden');
 
         finalMeetingEvent = duty.meeting; finalWorshipType = duty.type;
-        originalSongsMap = duty.songs || {};
+        // 【③新規ガード】新規連絡では過去の曲を復元しない(安全側の二重ガード)
+        originalSongsMap = (document.getElementById('finalContactType').value === '新規') ? {} : (duty.songs || {});
 
         const contactType = document.getElementById('finalContactType').value;
         const infoBar = document.getElementById('autoInfoBar');
@@ -413,7 +425,9 @@
         if (!meeting || !typeElem) return;
         finalMeetingEvent = meeting; finalWorshipType = typeElem.value;
         const currentDuty = getActiveDuty();
-        originalSongsMap = currentDuty ? currentDuty.songs : {};
+        // 【③新規ガード】新規連絡ではプレフィルをスキップ(入力欄の構成=songKeysはdutyから使用)
+        const isNewMode = document.getElementById('finalContactType').value === '新規';
+        originalSongsMap = (!isNewMode && currentDuty) ? currentDuty.songs : {};
         updateBookedSongs();
     }
 
@@ -624,7 +638,9 @@
             if (isSpecial) {
                 const teamSelVal = document.getElementById('specialTeamSelect').value;
                 const selTeam = teamSelVal === '__OTHER__' ? document.getElementById('specialTeamManual').value.trim() : teamSelVal;
-                const entry = (result.specialEntries || []).filter(en => en.team === selTeam)[0];
+                // 【③新規ガード】新規連絡では既存入力を復元しない
+                const isNewMode = document.getElementById('finalContactType').value === '新規';
+                const entry = isNewMode ? null : (result.specialEntries || []).filter(en => en.team === selTeam)[0];
                 originalSongsMap = entry ? { "選曲": entry.song || "", "備考欄": entry.remarks || "" } : {};
 
                 let existSong = originalSongsMap["選曲"] || "";
@@ -718,13 +734,26 @@
             const isManualSong = document.getElementById('book_filterSpecial').value === '__MANUAL__';
             let specSong = isManualSong ? document.getElementById('specialSongManual').value : document.getElementById('specialSongSelect').value;
 
-            let okeType = rawData.okeType || "オケ無";
-            if (okeType === "オケ有") {
-                specSong = cleanSongName(specSong) + '(オケ有)';
-            } else {
-                specSong = cleanSongName(specSong);
+            // ① オケ有のときのみ曲名末尾に(オケ有)を付記。オケ情報は備考欄には書かない(GAS側も対応済み)
+            const okeType = rawData.okeType || "オケ無";
+            const baseSong = cleanSongName(specSong);
+            if (!baseSong) {
+                alert('特別賛美の曲が未選択です。');
+                submitBtn.disabled = false; loadingMsg.classList.add('hidden');
+                return;
             }
-            songMap["選曲"] = processSongName("選曲", specSong);
+            const okeSuffix = okeType === "オケ有" ? "(オケ有)" : "";
+            const originalRaw = originalSongsMap["選曲"] || "";
+            if (isChangeMode && originalRaw && cleanSongName(originalRaw) === baseSong) {
+                const origOke = originalRaw.indexOf("(オケ有)") >= 0 ? "(オケ有)" : "";
+                // 曲が同じ: オケも同じなら元表記を維持、オケのみ変更なら新しいオケ状態で上書き
+                songMap["選曲"] = (origOke === okeSuffix) ? originalRaw : (baseSong + okeSuffix);
+            } else if (isChangeMode && originalRaw) {
+                // 曲を変更: オケ表記を保持したまま(変更)を付記
+                songMap["選曲"] = baseSong + okeSuffix + "(変更)";
+            } else {
+                songMap["選曲"] = baseSong + okeSuffix;
+            }
         } else {
             for (let idx = 0; idx < songInputKeys.length; idx++) {
                 const key = songInputKeys[idx];
