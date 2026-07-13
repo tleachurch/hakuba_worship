@@ -80,18 +80,20 @@
                     <label class="required">チーム名入力（新規追加）</label>
                     <input type="text" id="specialTeamManual" class="form-control" placeholder="チーム名を入力してください">
                 </div>
+                
+                <!-- ★【修正】選択肢のvalue属性をすべて「新しい統一形式」に修正しました -->
                 <div class="form-group">
                     <label class="required">3. 奉仕する聖会・集会</label>
                     <select id="meetingEventSpecial">
                         <option value="">選択してください</option>
-                        <option value="14火・夜の聖会">14(火)夜の聖会</option>
-                        <option value="15水・早天聖会">15(水)早天聖会</option>
-                        <option value="15水・開会聖会">15(水)開会聖会</option>
-                        <option value="15水・夜の聖会">15(水)夜の聖会</option>
-                        <option value="16木・早天聖会">16(木)早天聖会</option>
-                        <option value="16木・夜の聖会">16(木)夜の聖会</option>
-                        <option value="17金・早天聖会">17(金)早天聖会</option>
-                        <option value="17金・閉会聖会">17(金)閉会聖会</option>
+                        <option value="14(火)夜の聖会">14(火)夜の聖会</option>
+                        <option value="15(水)早天聖会">15(水)早天聖会</option>
+                        <option value="15(水)開会聖会">15(水)開会聖会</option>
+                        <option value="15(水)夜の聖会">15(水)夜の聖会</option>
+                        <option value="16(木)早天聖会">16(木)早天聖会</option>
+                        <option value="16(木)夜の聖会">16(木)夜の聖会</option>
+                        <option value="17(金)早天聖会">17(金)早天聖会</option>
+                        <option value="17(金)閉会聖会">17(金)閉会聖会</option>
                     </select>
                 </div>
 
@@ -106,19 +108,20 @@
 
             <div id="autoInfoBar" class="info-bar hidden"></div>
 
+            <!-- ★【修正】手動変更ルート側のvalue属性もすべて「新しい統一形式」に修正しました -->
             <div id="manualSelectGroup" class="hidden">
                 <div class="form-group">
                     <label class="required">変更後：奉仕する聖会・集会</label>
                     <select id="meetingEventManual">
                         <option value="">選択してください</option>
-                        <option value="14火・夜の聖会">14(火)夜の聖会</option>
-                        <option value="15水・早天聖会">15(水)早天聖会</option>
-                        <option value="15水・開会聖会">15(水)開会聖会</option>
-                        <option value="15水・夜の聖会">15(水)夜の聖会</option>
-                        <option value="16木・早天聖会">16(木)早天聖会</option>
-                        <option value="16木・夜の聖会">16(木)夜の聖会</option>
-                        <option value="17金・早天聖会">17(金)早天聖会</option>
-                        <option value="17金・閉会聖会">17(金)閉会聖会</option>
+                        <option value="14(火)夜の聖会">14(火)夜の聖会</option>
+                        <option value="15(水)早天聖会">15(水)早天聖会</option>
+                        <option value="15(水)開会聖会">15(水)開会聖会</option>
+                        <option value="15(水)夜の聖会">15(水)夜の聖会</option>
+                        <option value="16(木)早天聖会">16(木)早天聖会</option>
+                        <option value="16(木)夜の聖会">16(木)夜の聖会</option>
+                        <option value="17(金)早天聖会">17(金)早天聖会</option>
+                        <option value="17(金)閉会聖会">17(金)閉会聖会</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -215,6 +218,14 @@
     let finalMeetingEvent = "";
     let originalSongsMap = {};
     let songInputKeys = []; 
+
+    // ★【新設】どんな表記の聖会名が届いても、強制的に「15(水)夜の聖会」という綺麗形に置換するクレンジング関数
+    function formatMeetingNameForDisplay(str) {
+        if (!str) return "";
+        let clean = str.toString().replace(/\s+/g, "");
+        clean = clean.replace(/^(\d+)([月火水木金土日])・?/, "$1($2)");
+        return clean;
+    }
 
     function fetchJSONP(url, params, callbackName) {
         return new Promise((resolve, reject) => {
@@ -324,10 +335,17 @@
         if(defaultVal) targetSelect.value = defaultVal;
     }
 
+    // ★【修正】「特別賛美」を選んだ瞬間、チーム名や聖会の選択を待たずに即座に下の選曲欄を表示させる仕様へ大改造
     function handleMainWorshipTypeChange(type) {
-        showElement('route_congregation', type === '会衆賛美'); showElement('route_special', type === '特別賛美');
+        showElement('route_congregation', type === '会衆賛美'); 
+        showElement('route_special', type === '特別賛美');
         document.getElementById('manualSelectGroup').classList.add('hidden');
-        resetSelectionSection();
+        
+        if (type === '特別賛美') {
+            updateBookedSongs(); 
+        } else {
+            resetSelectionSection();
+        }
     }
 
     function getActiveDuty() {
@@ -346,7 +364,8 @@
 
         if (matches.length === 1) {
             const duty = matches[0].duty;
-            body.innerHTML = `あなたは <strong>【${duty.meeting} の ${duty.type} (通常曲数:${duty.maxSongs}曲)】</strong> のご担当でお間違いないですか？`;
+            const prettyMeeting = formatMeetingNameForDisplay(duty.meeting);
+            body.innerHTML = `あなたは <strong>【${prettyMeeting} の ${duty.type} (通常曲数:${duty.maxSongs}曲)】</strong> のご担当でお間違いないですか？`;
             footer.innerHTML = `
                 <div class="modal-btn-group">
                     <button type="button" class="btn-modal-no" onclick="applyManualSelect()">いいえ(変更)</button>
@@ -356,7 +375,8 @@
         } else if (matches.length > 1) {
             let html = `<strong>${singerName}</strong> は複数のご担当がシートに割り当てられています。<br>今回入力するものをタップしてください：<br><br>`;
             matches.forEach(m => {
-                html += `<button type="button" class="btn-modal-option" onclick="applyAutoSelect(${m.index})">📅 ${m.duty.meeting} (${m.duty.type} - 通常曲数:${m.duty.maxSongs}曲)</button>`;
+                const prettyMeeting = formatMeetingNameForDisplay(m.duty.meeting);
+                html += `<button type="button" class="btn-modal-option" onclick="applyAutoSelect(${m.index})">📅 ${prettyMeeting} (${m.duty.type} - 通常曲数:${m.duty.maxSongs}曲)</button>`;
             });
             body.innerHTML = html;
             footer.innerHTML = `<button type="button" class="btn-modal-no" style="width:100%" onclick="applyManualSelect()">一覧にないため手動(変更)で選ぶ</button>`;
@@ -376,7 +396,8 @@
 
         const contactType = document.getElementById('finalContactType').value;
         const infoBar = document.getElementById('autoInfoBar');
-        infoBar.innerHTML = `✅ 確定情報 ➔ 連絡区分: <strong>${contactType}</strong> / 担当聖会: <strong>${duty.meeting} 【${duty.type}】</strong>`;
+        const prettyMeeting = formatMeetingNameForDisplay(duty.meeting);
+        infoBar.innerHTML = `✅ 確定情報 ➔ 連絡区分: <strong>${contactType}</strong> / 担当聖会: <strong>${prettyMeeting} 【${duty.type}】</strong>`;
         infoBar.classList.remove('hidden');
         updateBookedSongs();
     }
@@ -582,16 +603,26 @@
     }
 
     async function updateBookedSongs() {
-        const isSpecial = document.querySelector('input[name="displayWorshipType"]:checked').value === '特別賛美';
+        const worshipTypeElem = document.querySelector('input[name="displayWorshipType"]:checked');
+        if (!worshipTypeElem) return;
+        const isSpecial = worshipTypeElem.value === '特別賛美';
+
         if (isSpecial) {
-            finalMeetingEvent = document.getElementById('meetingEventSpecial').value; finalWorshipType = "特別賛美";
-            if(!finalMeetingEvent || !document.getElementById('specialTeamSelect').value) return;
+            finalMeetingEvent = document.getElementById('meetingEventSpecial').value; 
+            finalWorshipType = "特別賛美";
         }
 
+        // ★【大改修】セクション2の器自体は、特別賛美が押された段階で最初から100%オープンする
         showElement('selectionSection', true);
         showElement('flow_congregation', !isSpecial);
         showElement('flow_special', isSpecial);
-        if (!isSpecial) renderSongInputs(); 
+
+        if (!isSpecial) {
+            renderSongInputs(); 
+        } else {
+            // 特別賛美の場合、聖会名かチーム名が空の段階では、GASへの重複チェック通信だけをスルーして待機
+            if(!finalMeetingEvent || !document.getElementById('specialTeamSelect').value) return;
+        }
 
         try {
             const result = await fetchJSONP(CONFIG.GAS_WEBAPP_URL, { action: 'loadBooked', meetingEvent: finalMeetingEvent, worshipType: finalWorshipType }, 'cb_booked');
@@ -650,14 +681,17 @@
 
     function showElement(id, isShow) { const el = document.getElementById(id); if (!el) return; if (isShow) el.classList.remove('hidden'); else el.classList.add('hidden'); }
 
+    // ★【修正】モーダル表示の際にも、クレンジング関数を通して綺麗な表記（15(水)夜の聖会）を生成・表示
     function showCompleteModal(name, songMap) {
         const lines = [];
-        lines.push(`【${finalMeetingEvent} / ${finalWorshipType}】`);
+        const prettyMeeting = formatMeetingNameForDisplay(finalMeetingEvent);
+        lines.push(`【${prettyMeeting} / ${finalWorshipType}】`);
         lines.push(`奉仕者名: ${name}`);
         Object.keys(songMap).forEach(k => lines.push(`${k}: ${songMap[k]}`));
         document.getElementById('completeTextDisplay').value = lines.join('\n');
         document.getElementById('completeModal').style.display = 'flex';
     }
+    
     function closeCompleteModal() { document.getElementById('completeModal').style.display = 'none'; }
     function copyCompleteText() {
         const ta = document.getElementById('completeTextDisplay');
