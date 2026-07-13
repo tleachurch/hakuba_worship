@@ -64,7 +64,7 @@
             <div id="route_congregation" class="hidden">
                 <div class="form-group">
                     <label class="required">2. 奉仕者名（チーム名）</label>
-                    <select id="singerName" name="singerName"><option value="">データを読み込み中...</option></select>
+                    <select id="singerName" name="singerName"><option value="">選択してください</option></select>
                 </div>
             </div>
 
@@ -81,22 +81,22 @@
                     <label class="required">3. 奉仕する聖会・集会</label>
                     <select id="meetingEventSpecial">
                         <option value="">選択してください</option>
-                        <option value="14(火)夜の聖会">14(火)夜の聖会</option>
-                        <option value="15(水)早天聖会">15(水)早天聖会</option>
-                        <option value="15(水)開会聖会">15(水)開会聖会</option>
-                        <option value="15(水)夜の聖会">15(水)夜の聖会</option>
-                        <option value="16(木)早天聖会">16(木)早天聖会</option>
-                        <option value="16(木)夜の聖会">16(木)夜の聖会</option>
-                        <option value="17(金)早天聖会">17(金)早天聖会</option>
-                        <option value="17(金)閉会聖会">17(金)閉会聖会</option>
+                        <option value="14火・夜の聖会">14(火)夜の聖会</option>
+                        <option value="15水・早天聖会">15(水)早天聖会</option>
+                        <option value="15水・開会聖会">15(水)開会聖会</option>
+                        <option value="15水・夜の聖会">15(水)夜の聖会</option>
+                        <option value="16木・早天聖会">16(木)早天聖会</option>
+                        <option value="16木・夜の聖会">16(木)夜の聖会</option>
+                        <option value="17金・早天聖会">17(金)早天聖会</option>
+                        <option value="17金・閉会聖会">17(金)閉会聖会</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label class="required">4. オケの有無</label>
                     <div class="radio-group">
-                        <div class="radio-item"><input type="radio" name="orchestraType" value="オケ有"> オケ有</div>
-                        <div class="radio-item"><input type="radio" name="orchestraType" value="オケ無" checked> オケ無</div>
+                        <div class="radio-item"><input type="radio" name="okeType" value="オケ有"> オケ有</div>
+                        <div class="radio-item"><input type="radio" name="okeType" value="オケ無" checked> オケ無</div>
                     </div>
                 </div>
             </div>
@@ -108,14 +108,14 @@
                     <label class="required">変更後：奉仕する聖会・集会</label>
                     <select id="meetingEventManual">
                         <option value="">選択してください</option>
-                        <option value="14(火)夜の聖会">14(火)夜の聖会</option>
-                        <option value="15(水)早天聖会">15(水)早天聖会</option>
-                        <option value="15(水)開会聖会">15(水)開会聖会</option>
-                        <option value="15(水)夜の聖会">15(水)夜の聖会</option>
-                        <option value="16(木)早天聖会">16(木)早天聖会</option>
-                        <option value="16(木)夜の聖会">16(木)夜の聖会</option>
-                        <option value="17(金)早天聖会">17(金)早天聖会</option>
-                        <option value="17(金)閉会聖会">17(金)閉会聖会</option>
+                        <option value="14火・夜の聖会">14(火)夜の聖会</option>
+                        <option value="15水・早天聖会">15(水)早天聖会</option>
+                        <option value="15水・開会聖会">15(水)開会聖会</option>
+                        <option value="15水・夜の聖会">15(水)夜の聖会</option>
+                        <option value="16木・早天聖会">16(木)早天聖会</option>
+                        <option value="16木・夜の聖会">16(木)夜の聖会</option>
+                        <option value="17金・早天聖会">17(金)早天聖会</option>
+                        <option value="17金・閉会聖会">17(金)閉会聖会</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -250,7 +250,6 @@
             masterData.dynamicDuties = result.dynamicDuties || [];
             masterData.specialTeams = result.specialTeams || [];
             
-            // ★【フリーズガード①】データが万が一空っぽで届いても絶対に落ちないように保護
             const rawProphecy = result.earlyProphecySongs || [];
             masterData.earlyProphecySongs = rawProphecy.map(song => {
                 let prefix = (song.code && song.code.startsWith('K')) ? '風のひびき' : 'やすらぎの歌';
@@ -258,7 +257,6 @@
                 return `${prefix} ${volume}集 ${song.num || ''} ${song.title || ''}`;
             });
 
-            // ★【フリーズガード②】GASが「古い別AI版」のままで、allSongsが丸ごと届いた場合でも全自動で吸収して動くように対応
             const rawAllSongs = result.allSongs || [];
             if (rawAllSongs.length > 0) {
                 let categories = new Set();
@@ -278,7 +276,6 @@
             renderSingerDropdown(); renderSpecialTeamDropdown(); buildSpecialFilterDropdown(); initEventListeners();
         } catch(e) { 
             console.error(e);
-            // ★【フリーズガード③】エラー内容を画面上で一発特定できるよう詳細化
             alert("マスターデータの同期に失敗しました。\n[詳細原因]: " + e.message + "\n\n※ブラウザを再読み込みするか、GAS側が正しくデプロイ更新されているかご確認ください。"); 
         }
     });
@@ -605,8 +602,8 @@
 
                 let existSong = originalSongsMap["選曲"] || "";
                 let plainSong = cleanSongName(existSong);
-                if (existSong.indexOf("(オケ有)") >= 0) document.querySelectorAll('input[name="orchestraType"]')[0].checked = true;
-                else if (existSong.indexOf("(オケ無)") >= 0) document.querySelectorAll('input[name="orchestraType"]')[1].checked = true;
+                if (existSong.indexOf("(オケ有)") >= 0) document.querySelectorAll('input[name="okeType"]')[0].checked = true;
+                else if (existSong.indexOf("(オケ無)") >= 0) document.querySelectorAll('input[name="okeType"]')[1].checked = true;
 
                 if (plainSong) {
                     let matchCat = masterData.allSongs.filter(s => s.fullName === plainSong)[0];
@@ -692,8 +689,13 @@
             const isManualSong = document.getElementById('book_filterSpecial').value === '__MANUAL__';
             let specSong = isManualSong ? document.getElementById('specialSongManual').value : document.getElementById('specialSongSelect').value;
 
-            let orchType = rawData.orchestraType || "オケ無";
-            specSong = cleanSongName(specSong) + `(${orchType})`;
+            // ★【オケ無の付記を完全廃止】オケ有のときだけ (オケ有) をつける
+            let okeType = rawData.okeType || "オケ無";
+            if (okeType === "オケ有") {
+                specSong = cleanSongName(specSong) + '(オケ有)';
+            } else {
+                specSong = cleanSongName(specSong);
+            }
             songMap["選曲"] = processSongName("選曲", specSong);
         } else {
             for (let idx = 0; idx < songInputKeys.length; idx++) {
@@ -713,12 +715,24 @@
             }
         }
 
-        const postPayload = { meetingEvent: finalMeetingEvent, worshipType: finalWorshipType, singerName: rawData.singerName || "", groupName: groupName, orchestraDetails: rawData.orchestraType || "", remarks: rawData.remarks || "", action: 'submit', songMap: songMap, contactType: rawData.contactType };
+        const postPayload = { meetingEvent: finalMeetingEvent, worshipType: finalWorshipType, singerName: rawData.singerName || "", groupName: groupName, okeDetails: rawData.okeType || "オケ無", remarks: rawData.remarks || "", action: 'submit', songMap: songMap, contactType: rawData.contactType };
         try {
             await fetch(CONFIG.GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(postPayload) });
             const displayName = finalWorshipType === '特別賛美' ? groupName : (rawData.singerName || "");
             showCompleteModal(displayName, songMap); 
-            e.target.reset(); handleMainWorshipTypeChange('');
+            
+            // 完全初期化とポップアップの再起動
+            e.target.reset(); 
+            handleMainWorshipTypeChange('');
+            originalSongsMap = {};
+            songInputKeys = [];
+            document.getElementById('finalContactType').value = "新規";
+            
+            const initModal = document.getElementById('initModal');
+            initModal.style.display = 'flex';
+            initModal.classList.remove('hidden');
+            document.querySelector('input[name="initContactType"][value="新規"]').checked = true;
+            
         } catch (error) { alert('送信エラー。'); }
         finally { submitBtn.disabled = false; loadingMsg.classList.add('hidden'); }
     });
