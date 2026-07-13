@@ -44,7 +44,7 @@
         <h1>白馬キャンプ 選曲リスト</h1>
         <div class="header-tools">
             <span class="updated-at" id="updatedAt"></span>
-            <button type="button" class="btn-refresh" onclick="loadList()">最新に更新</button>
+            <button type="button" class="btn-refresh" onclick="loadList(false)">最新に更新</button>
         </div>
     </div>
     <div class="sheet-area">
@@ -110,24 +110,41 @@
         container.innerHTML = html;
     }
 
-    async function loadList() {
+    async function loadList(isAuto) {
         const loading = document.getElementById('listLoading');
-        loading.style.display = 'block';
+        // ② 体感高速化: 前回取得(localStorage)を即描画し、裏で最新を取得して差し替える(stale-while-revalidate)
+        if (!isAuto) {
+            try {
+                const cached = localStorage.getItem('hakuba_list_cache');
+                if (cached) {
+                    const obj = JSON.parse(cached);
+                    if (obj && obj.rows) {
+                        renderTable(obj.rows);
+                        document.getElementById('updatedAt').textContent = '前回の内容を表示中...更新を確認しています';
+                        loading.style.display = 'none';
+                    }
+                }
+            } catch (cacheErr) { /* キャッシュ不正時は無視 */ }
+        }
+        if (document.getElementById('listContainer').innerHTML.trim() === '') loading.style.display = 'block';
         try {
-            const result = await fetchJSONP(CONFIG.GAS_WEBAPP_URL, { action: 'loadList' }, 'cb_list');
+            const result = await fetchJSONP(CONFIG.GAS_WEBAPP_URL, { action: 'loadList' }, 'cb_list_' + Date.now());
             renderTable(result.rows || []);
+            try { localStorage.setItem('hakuba_list_cache', JSON.stringify({ rows: result.rows || [] })); } catch(e) {}
             const now = new Date();
             document.getElementById('updatedAt').textContent = '取得時刻: ' + now.toLocaleTimeString('ja-JP');
         } catch (e) {
-            document.getElementById('listContainer').innerHTML = '<p style="color:#a4262c;">一覧の取得に失敗しました。再読み込みしてください。</p>';
+            if (document.getElementById('listContainer').innerHTML.trim() === '') {
+                document.getElementById('listContainer').innerHTML = '<p style="color:#a4262c;">一覧の取得に失敗しました。再読み込みしてください。</p>';
+            }
         } finally {
             loading.style.display = 'none';
         }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        loadList();
-        if (AUTO_REFRESH_MS > 0) setInterval(loadList, AUTO_REFRESH_MS);
+        loadList(false);
+        if (AUTO_REFRESH_MS > 0) setInterval(() => loadList(true), AUTO_REFRESH_MS);
     });
 </script>
 </body>
